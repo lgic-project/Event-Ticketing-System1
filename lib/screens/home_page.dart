@@ -67,6 +67,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildEventCard(Event event) {
+    // Get ticket sales data from DataManager
+    final ticketSales = dataManager.getTicketSalesForEvent(event.id);
+    final generalSold = ticketSales['generalSold'] ?? 0;
+    final vipSold = ticketSales['vipSold'] ?? 0;
+    final generalAvailable = event.generalSeats - generalSold;
+    final vipAvailable = event.vipSeats - vipSold;
+    final totalSold = generalSold + vipSold;
+    final totalSeats = event.generalSeats + event.vipSeats;
+    final totalAvailable = totalSeats - totalSold;
+
     return Card(
       margin: EdgeInsets.only(bottom: 16),
       elevation: 4,
@@ -79,7 +89,10 @@ class _HomePageState extends State<HomePage> {
               builder: (context) => TicketDetailsPage(),
               settings: RouteSettings(arguments: event),
             ),
-          );
+          ).then((_) {
+            // Refresh the page when returning from ticket details
+            setState(() {});
+          });
         },
         borderRadius: BorderRadius.circular(12),
         child: Column(
@@ -139,6 +152,176 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   SizedBox(height: 12),
+
+                  // Ticket Availability Section
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.confirmation_number,
+                              size: 16,
+                              color: Colors.blue[600],
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Ticket Availability',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[800],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+
+                        // Overall availability
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total Available:',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                            Text(
+                              '$totalAvailable / $totalSeats',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: totalAvailable > 0
+                                    ? Colors.green[700]
+                                    : Colors.red[700],
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+
+                        // General tickets
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'General Available:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              '$generalAvailable / ${event.generalSeats}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: generalAvailable > 0
+                                    ? Colors.green[600]
+                                    : Colors.red[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 2),
+
+                        // VIP tickets
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'VIP Available:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              '$vipAvailable / ${event.vipSeats}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: vipAvailable > 0
+                                    ? Colors.green[600]
+                                    : Colors.red[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Sales summary
+                        if (totalSold > 0) ...[
+                          SizedBox(height: 8),
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Colors.blue[200],
+                          ),
+                          SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.trending_up,
+                                size: 14,
+                                color: Colors.blue[600],
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                '$totalSold tickets sold',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
+                        // Sold out warning
+                        if (totalAvailable == 0) ...[
+                          SizedBox(height: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red[100],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 14,
+                                  color: Colors.red[700],
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'SOLD OUT',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -151,21 +334,31 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TicketDetailsPage(),
-                              settings: RouteSettings(arguments: event),
-                            ),
-                          );
-                        },
+                        onPressed: totalAvailable > 0
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => TicketDetailsPage(),
+                                    settings: RouteSettings(arguments: event),
+                                  ),
+                                ).then((_) {
+                                  // Refresh the page when returning from ticket details
+                                  setState(() {});
+                                });
+                              }
+                            : null,
                         style: ElevatedButton.styleFrom(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
+                          backgroundColor: totalAvailable > 0
+                              ? null
+                              : Colors.grey,
                         ),
-                        child: Text('View Details'),
+                        child: Text(
+                          totalAvailable > 0 ? 'View Details' : 'Sold Out',
+                        ),
                       ),
                     ],
                   ),
@@ -204,46 +397,80 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: dataManager.tickets.length,
-      itemBuilder: (context, index) {
-        final ticket = dataManager.tickets[index];
-        return Card(
-          margin: EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: ticket.status == 'Active'
-                  ? Colors.green
-                  : Colors.red,
-              child: Icon(
-                ticket.status == 'Active' ? Icons.check : Icons.cancel,
-                color: Colors.white,
-              ),
-            ),
-            title: Text(ticket.eventTitle),
-            subtitle: Text(
-              '${ticket.ticketType} - \$${ticket.price.toStringAsFixed(2)}',
-            ),
-            trailing: Text(
-              ticket.status,
-              style: TextStyle(
-                color: ticket.status == 'Active' ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PurchaseDetailsPage(),
-                  settings: RouteSettings(arguments: ticket),
-                ),
-              );
-            },
-          ),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {}); // Refresh the tickets list
       },
+      child: ListView.builder(
+        padding: EdgeInsets.all(16),
+        itemCount: dataManager.tickets.length,
+        itemBuilder: (context, index) {
+          final ticket = dataManager.tickets[index];
+          return Card(
+            margin: EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: ticket.status == 'Active'
+                    ? Colors.green
+                    : Colors.red,
+                child: Icon(
+                  ticket.status == 'Active' ? Icons.check : Icons.cancel,
+                  color: Colors.white,
+                ),
+              ),
+              title: Text(ticket.eventTitle),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${ticket.ticketType} - \$${ticket.price.toStringAsFixed(2)}',
+                  ),
+                  if (ticket.status == 'Cancelled')
+                    Text(
+                      'Refund processed',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
+              ),
+              trailing: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ticket.status == 'Active'
+                      ? Colors.green[100]
+                      : Colors.red[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  ticket.status,
+                  style: TextStyle(
+                    color: ticket.status == 'Active'
+                        ? Colors.green[700]
+                        : Colors.red[700],
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PurchaseDetailsPage(),
+                    settings: RouteSettings(arguments: ticket),
+                  ),
+                ).then((_) {
+                  // Refresh when returning from purchase details
+                  setState(() {});
+                });
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
