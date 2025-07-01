@@ -7,8 +7,8 @@ class Event {
   final String imageUrl;
   final double vipPrice;
   final double generalPrice;
-  final int vipSeats;
-  final int generalSeats;
+  late final int vipSeats;
+  late final int generalSeats;
 
   Event({
     required this.id,
