@@ -274,4 +274,10 @@ class DataManager {
       };
     }).toList();
   }
+
+  void updateEvent(Event event) {}
+
+  void updateEventGeneralTickets(String id, param1) {}
+
+  void updateEventVipTickets(String id, param1) {}
 }
