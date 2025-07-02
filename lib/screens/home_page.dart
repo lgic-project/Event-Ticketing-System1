@@ -89,9 +89,14 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildEventCard(Event event) {
     // Get ticket sales data from DataManager
-    final ticketSales = dataManager.getTicketSalesForEvent(event.id);
-    final generalSold = ticketSales['generalSold'] ?? 0;
-    final vipSold = ticketSales['vipSold'] ?? 0;
+    final generalSold = dataManager.tickets
+        .where((t) => t.eventId == event.id && t.ticketType == 'General')
+        .length;
+
+    final vipSold = dataManager.tickets
+        .where((t) => t.eventId == event.id && t.ticketType == 'VIP')
+        .length;
+
     final generalAvailable = event.generalSeats - generalSold;
     final vipAvailable = event.vipSeats - vipSold;
     final totalSold = generalSold + vipSold;
@@ -123,6 +128,10 @@ class _HomePageState extends State<HomePage> {
               height: 200,
               width: double.infinity,
               decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(event.imageUrl),
+                  fit: BoxFit.cover,
+                ),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 color: Colors.grey[300],
               ),
