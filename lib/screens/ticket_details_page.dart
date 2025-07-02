@@ -93,6 +93,7 @@ class _TicketDetailsPageState extends State<TicketDetailsPage> {
                   SizedBox(height: 12),
                   _buildTicketTypeCard('VIP', event.vipPrice, event.vipSeats),
                   SizedBox(height: 24),
+
                   Text(
                     'Customer Information',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
