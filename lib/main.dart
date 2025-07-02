@@ -1,3 +1,4 @@
+import 'package:event_ticketing_system1/screens/admin_panel.dart';
 import 'package:event_ticketing_system1/screens/purchase_details_page.dart';
 import 'package:event_ticketing_system1/screens/splash_screen.dart';
 import 'package:event_ticketing_system1/screens/ticket_details_page.dart';
@@ -20,6 +21,7 @@ class EventTicketingApp extends StatelessWidget {
       routes: {
         '/ticket-details': (context) => TicketDetailsPage(),
         '/purchase-details': (context) => PurchaseDetailsPage(),
+        '/home-page': (context) => AdminPanel(),
       },
     );
   }
