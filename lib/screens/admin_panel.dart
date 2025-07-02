@@ -1,12 +1,16 @@
-import 'package:event_ticketing_system1/models/admin_models.dart';
-import 'package:event_ticketing_system1/screens/home_page.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:event_ticketing_system1/providers/admin_provider.dart';
+import 'package:event_ticketing_system1/providers/auth_provider.dart';
+import 'package:event_ticketing_system1/models/event.dart';
+import 'package:event_ticketing_system1/models/users.dart';
+import 'package:event_ticketing_system1/models/ticket.dart';
+import 'package:event_ticketing_system1/screens/home_page.dart';
 
 class AdminPanel extends StatefulWidget {
   const AdminPanel({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _AdminPanelState createState() => _AdminPanelState();
 }
 
@@ -15,89 +19,15 @@ class _AdminPanelState extends State<AdminPanel>
   TabController? _tabController;
   String searchQuery = '';
 
-  List<Event> events = [
-    Event(
-      id: 1,
-      name: 'Summer Music Festival',
-      date: DateTime(2024, 8, 15),
-      venue: 'Central Park Amphitheater',
-      capacity: 5000,
-      ticketsSold: 3200,
-      price: 75.0,
-      status: 'active',
-    ),
-    Event(
-      id: 2,
-      name: 'Tech Conference 2024',
-      date: DateTime(2024, 9, 22),
-      venue: 'Convention Center',
-      capacity: 1000,
-      ticketsSold: 850,
-      price: 150.0,
-      status: 'active',
-    ),
-    Event(
-      id: 3,
-      name: 'Comedy Night',
-      date: DateTime(2024, 7, 30),
-      venue: 'Downtown Theater',
-      capacity: 300,
-      ticketsSold: 300,
-      price: 35.0,
-      status: 'sold_out',
-    ),
-  ];
-
-  List<User> users = [
-    User(
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1-555-0123',
-      totalPurchases: 5,
-      totalSpent: 425.0,
-      joinDate: DateTime(2024, 1, 15),
-    ),
-    User(
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+1-555-0124',
-      totalPurchases: 3,
-      totalSpent: 180.0,
-      joinDate: DateTime(2024, 2, 20),
-    ),
-  ];
-
-  List<Ticket> tickets = [
-    Ticket(
-      id: 1,
-      eventId: 1,
-      eventName: 'Summer Music Festival',
-      customerName: 'John Doe',
-      customerEmail: 'john@example.com',
-      quantity: 2,
-      totalPrice: 150.0,
-      purchaseDate: DateTime(2024, 6, 15),
-      status: 'confirmed',
-    ),
-    Ticket(
-      id: 2,
-      eventId: 2,
-      eventName: 'Tech Conference 2024',
-      customerName: 'Jane Smith',
-      customerEmail: 'jane@example.com',
-      quantity: 1,
-      totalPrice: 150.0,
-      purchaseDate: DateTime(2024, 6, 20),
-      status: 'confirmed',
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Fetch admin data
+    Future.microtask(() {
+      context.read<AdminProvider>().fetchAdminData();
+    });
   }
 
   @override
@@ -106,25 +36,63 @@ class _AdminPanelState extends State<AdminPanel>
     super.dispose();
   }
 
-  // Statistics calculations
-  double get totalRevenue =>
-      events.fold(0, (sum, event) => sum + (event.ticketsSold * event.price));
-  int get totalTicketsSold =>
-      events.fold(0, (sum, event) => sum + event.ticketsSold);
-
   @override
   Widget build(BuildContext context) {
+    final adminProvider = context.watch<AdminProvider>();
+    final authProvider = context.watch<AuthProvider>();
+
+    // Check if user is admin
+    if (!authProvider.isAdmin) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Access Denied'),
+          backgroundColor: Colors.red,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.block, size: 80, color: Colors.red),
+              SizedBox(height: 16),
+              Text(
+                'You do not have admin privileges',
+                style: TextStyle(fontSize: 18, color: Colors.red),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (adminProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Loading...'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
-          'Event Ticketing Admin',
+          'Admin Dashboard',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.blue[600],
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
           tabs: [
             Tab(icon: Icon(Icons.event), text: 'Events'),
             Tab(icon: Icon(Icons.people), text: 'Users'),
@@ -134,45 +102,39 @@ class _AdminPanelState extends State<AdminPanel>
       ),
       body: Column(
         children: [
-          // Statistics Dashboard
+          // Statistics Dashboard - Made scrollable
           Container(
-            padding: EdgeInsets.all(16),
-            child: Row(
+            height: 120,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.all(16),
               children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Total Events',
-                    events.length.toString(),
-                    Icons.event,
-                    Colors.blue,
-                  ),
+                _buildStatCard(
+                  'Total Events',
+                  adminProvider.totalEvents.toString(),
+                  Icons.event,
+                  Colors.blue,
                 ),
                 SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Tickets Sold',
-                    totalTicketsSold.toString(),
-                    Icons.local_activity,
-                    Colors.green,
-                  ),
+                _buildStatCard(
+                  'Tickets Sold',
+                  adminProvider.totalTicketsSold.toString(),
+                  Icons.local_activity,
+                  Colors.green,
                 ),
                 SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Revenue',
-                    '\$${totalRevenue.toStringAsFixed(0)}',
-                    Icons.attach_money,
-                    Colors.purple,
-                  ),
+                _buildStatCard(
+                  'Revenue',
+                  '\$${adminProvider.totalRevenue.toStringAsFixed(0)}',
+                  Icons.attach_money,
+                  Colors.purple,
                 ),
                 SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Total Users',
-                    users.length.toString(),
-                    Icons.people,
-                    Colors.orange,
-                  ),
+                _buildStatCard(
+                  'Total Users',
+                  adminProvider.totalUsers.toString(),
+                  Icons.people,
+                  Colors.orange,
                 ),
               ],
             ),
@@ -224,6 +186,7 @@ class _AdminPanelState extends State<AdminPanel>
     Color color,
   ) {
     return Container(
+      width: 160,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -239,14 +202,18 @@ class _AdminPanelState extends State<AdminPanel>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             children: [
               Icon(icon, color: color, size: 24),
               SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -254,6 +221,7 @@ class _AdminPanelState extends State<AdminPanel>
           Text(
             value,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -261,10 +229,8 @@ class _AdminPanelState extends State<AdminPanel>
   }
 
   Widget _buildEventsTab() {
-    List<Event> filteredEvents = events.where((event) {
-      return event.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          event.venue.toLowerCase().contains(searchQuery.toLowerCase());
-    }).toList();
+    final adminProvider = context.watch<AdminProvider>();
+    final filteredEvents = adminProvider.searchEvents(searchQuery);
 
     return Column(
       children: [
@@ -274,15 +240,15 @@ class _AdminPanelState extends State<AdminPanel>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Events',
+                'Events (${filteredEvents.length})',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               ElevatedButton.icon(
                 onPressed: () => _showEventDialog(),
-                icon: Icon(Icons.add),
+                icon: Icon(Icons.add, size: 20),
                 label: Text('Add Event'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -307,17 +273,18 @@ class _AdminPanelState extends State<AdminPanel>
   }
 
   Widget _buildEventCard(Event event) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-      },
-      child: Card(
-        margin: EdgeInsets.only(bottom: 12),
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Card(
+      margin: EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Column(
@@ -328,14 +295,17 @@ class _AdminPanelState extends State<AdminPanel>
                 children: [
                   Expanded(
                     child: Text(
-                      event.name,
+                      event.title,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
-                  _buildStatusChip(event.status),
+                  SizedBox(width: 8),
+                  _buildStatusChip(event.displayStatus),
                 ],
               ),
               SizedBox(height: 8),
@@ -343,7 +313,14 @@ class _AdminPanelState extends State<AdminPanel>
                 children: [
                   Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                   SizedBox(width: 4),
-                  Text(event.venue, style: TextStyle(color: Colors.grey[600])),
+                  Expanded(
+                    child: Text(
+                      event.venue,
+                      style: TextStyle(color: Colors.grey[600]),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 4),
@@ -361,35 +338,39 @@ class _AdminPanelState extends State<AdminPanel>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Capacity: ${event.capacity}',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      Text(
-                        'Sold: ${event.ticketsSold}',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      Text(
-                        'Price: \$${event.price}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Capacity: ${event.capacity}',
+                          style: TextStyle(fontSize: 12),
                         ),
-                      ),
-                    ],
+                        Text(
+                          'Sold: ${event.ticketsSold}',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        Text(
+                          'Price: \$${event.generalPrice.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   Row(
                     children: [
                       IconButton(
                         onPressed: () => _showEventDialog(event: event),
                         icon: Icon(Icons.edit, color: Colors.blue),
+                        tooltip: 'Edit Event',
                       ),
                       IconButton(
                         onPressed: () => _deleteEvent(event.id),
                         icon: Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Delete Event',
                       ),
                     ],
                   ),
@@ -403,10 +384,8 @@ class _AdminPanelState extends State<AdminPanel>
   }
 
   Widget _buildUsersTab() {
-    List<User> filteredUsers = users.where((user) {
-      return user.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          user.email.toLowerCase().contains(searchQuery.toLowerCase());
-    }).toList();
+    final adminProvider = context.watch<AdminProvider>();
+    final filteredUsers = adminProvider.searchUsers(searchQuery);
 
     return Column(
       children: [
@@ -416,15 +395,15 @@ class _AdminPanelState extends State<AdminPanel>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Users',
+                'Users (${filteredUsers.length})',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               ElevatedButton.icon(
                 onPressed: () => _showUserDialog(),
-                icon: Icon(Icons.add),
+                icon: Icon(Icons.add, size: 20),
                 label: Text('Add User'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -462,9 +441,39 @@ class _AdminPanelState extends State<AdminPanel>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    user.name,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      if (user.isAdmin)
+                        Container(
+                          margin: EdgeInsets.only(top: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.purple[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'ADMIN',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple[800],
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 Row(
@@ -472,10 +481,12 @@ class _AdminPanelState extends State<AdminPanel>
                     IconButton(
                       onPressed: () => _showUserDialog(user: user),
                       icon: Icon(Icons.edit, color: Colors.blue),
+                      tooltip: 'Edit User',
                     ),
                     IconButton(
                       onPressed: () => _deleteUser(user.id),
                       icon: Icon(Icons.delete, color: Colors.red),
+                      tooltip: 'Delete User',
                     ),
                   ],
                 ),
@@ -486,7 +497,14 @@ class _AdminPanelState extends State<AdminPanel>
               children: [
                 Icon(Icons.email, size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
-                Text(user.email, style: TextStyle(color: Colors.grey[600])),
+                Expanded(
+                  child: Text(
+                    user.email,
+                    style: TextStyle(color: Colors.grey[600]),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
               ],
             ),
             SizedBox(height: 4),
@@ -494,7 +512,10 @@ class _AdminPanelState extends State<AdminPanel>
               children: [
                 Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
-                Text(user.phone, style: TextStyle(color: Colors.grey[600])),
+                Text(
+                  user.phone ?? 'N/A',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ],
             ),
             SizedBox(height: 12),
@@ -509,7 +530,7 @@ class _AdminPanelState extends State<AdminPanel>
                       style: TextStyle(fontSize: 12),
                     ),
                     Text(
-                      'Total Spent: \$${user.totalSpent}',
+                      'Total Spent: \$${user.totalSpent.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -530,19 +551,15 @@ class _AdminPanelState extends State<AdminPanel>
   }
 
   Widget _buildTicketsTab() {
-    List<Ticket> filteredTickets = tickets.where((ticket) {
-      return ticket.eventName.toLowerCase().contains(
-            searchQuery.toLowerCase(),
-          ) ||
-          ticket.customerName.toLowerCase().contains(searchQuery.toLowerCase());
-    }).toList();
+    final adminProvider = context.watch<AdminProvider>();
+    final filteredTickets = adminProvider.searchTickets(searchQuery);
 
     return Column(
       children: [
         Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            'Tickets',
+            'Tickets (${filteredTickets.length})',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ),
@@ -573,28 +590,56 @@ class _AdminPanelState extends State<AdminPanel>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Ticket #${ticket.id}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    'Ticket #${ticket.id}',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
+                SizedBox(width: 8),
                 _buildStatusChip(ticket.status),
               ],
             ),
             SizedBox(height: 8),
             Text(
-              ticket.eventName,
+              ticket.eventTitle,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
             SizedBox(height: 4),
-            Text(
-              'Customer: ${ticket.customerName}',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Email: ${ticket.customerEmail}',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+            if (ticket.customerName != null)
+              Row(
+                children: [
+                  Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Customer: ${ticket.customerName}',
+                      style: TextStyle(color: Colors.grey[600]),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+            if (ticket.customerEmail != null)
+              Row(
+                children: [
+                  Icon(Icons.email, size: 16, color: Colors.grey[600]),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${ticket.customerEmail}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
             SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -602,12 +647,40 @@ class _AdminPanelState extends State<AdminPanel>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Quantity: ${ticket.quantity}',
-                      style: TextStyle(fontSize: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: ticket.ticketType == 'VIP'
+                                ? Colors.orange[100]
+                                : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            ticket.ticketType,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: ticket.ticketType == 'VIP'
+                                  ? Colors.orange[800]
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Qty: ${ticket.quantity}',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
                     ),
+                    SizedBox(height: 4),
                     Text(
-                      'Total: \$${ticket.totalPrice}',
+                      'Total: \$${ticket.totalPrice.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -620,7 +693,7 @@ class _AdminPanelState extends State<AdminPanel>
                   children: [
                     Text(
                       'Purchase Date:',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                     Text(
                       '${ticket.purchaseDate.day}/${ticket.purchaseDate.month}/${ticket.purchaseDate.year}',
@@ -638,18 +711,32 @@ class _AdminPanelState extends State<AdminPanel>
 
   Widget _buildStatusChip(String status) {
     Color color;
-    switch (status) {
+    String displayText;
+
+    switch (status.toLowerCase()) {
       case 'active':
         color = Colors.green;
+        displayText = 'ACTIVE';
         break;
       case 'sold_out':
         color = Colors.red;
+        displayText = 'SOLD OUT';
         break;
       case 'confirmed':
         color = Colors.blue;
+        displayText = 'CONFIRMED';
+        break;
+      case 'cancelled':
+        color = Colors.red;
+        displayText = 'CANCELLED';
+        break;
+      case 'completed':
+        color = Colors.grey;
+        displayText = 'COMPLETED';
         break;
       default:
         color = Colors.grey;
+        displayText = status.toUpperCase();
     }
 
     return Container(
@@ -659,7 +746,7 @@ class _AdminPanelState extends State<AdminPanel>
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        status.replaceAll('_', ' ').toUpperCase(),
+        displayText,
         style: TextStyle(
           color: color,
           fontSize: 10,
@@ -670,13 +757,19 @@ class _AdminPanelState extends State<AdminPanel>
   }
 
   void _showEventDialog({Event? event}) {
-    final nameController = TextEditingController(text: event?.name ?? '');
+    final nameController = TextEditingController(text: event?.title ?? '');
+    final descriptionController = TextEditingController(
+      text: event?.description ?? '',
+    );
     final venueController = TextEditingController(text: event?.venue ?? '');
     final capacityController = TextEditingController(
       text: event?.capacity.toString() ?? '',
     );
-    final priceController = TextEditingController(
-      text: event?.price.toString() ?? '',
+    final generalPriceController = TextEditingController(
+      text: event?.generalPrice.toString() ?? '',
+    );
+    final vipPriceController = TextEditingController(
+      text: event?.vipPrice.toString() ?? '',
     );
     DateTime selectedDate = event?.date ?? DateTime.now();
 
@@ -690,21 +783,85 @@ class _AdminPanelState extends State<AdminPanel>
             children: [
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(labelText: 'Event Name'),
+                decoration: InputDecoration(
+                  labelText: 'Event Name',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              SizedBox(height: 12),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              SizedBox(height: 12),
               TextField(
                 controller: venueController,
-                decoration: InputDecoration(labelText: 'Venue'),
+                decoration: InputDecoration(
+                  labelText: 'Venue',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: capacityController,
-                decoration: InputDecoration(labelText: 'Capacity'),
+                decoration: InputDecoration(
+                  labelText: 'Total Capacity',
+                  border: OutlineInputBorder(),
+                ),
                 keyboardType: TextInputType.number,
               ),
+              SizedBox(height: 12),
               TextField(
-                controller: priceController,
-                decoration: InputDecoration(labelText: 'Price'),
+                controller: generalPriceController,
+                decoration: InputDecoration(
+                  labelText: 'General Ticket Price',
+                  border: OutlineInputBorder(),
+                  prefixText: '\$',
+                ),
                 keyboardType: TextInputType.number,
+              ),
+              SizedBox(height: 12),
+              TextField(
+                controller: vipPriceController,
+                decoration: InputDecoration(
+                  labelText: 'VIP Ticket Price',
+                  border: OutlineInputBorder(),
+                  prefixText: '\$',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              SizedBox(height: 12),
+              InkWell(
+                onTap: () async {
+                  final DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    selectedDate = picked;
+                  }
+                },
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Event Date',
+                    border: OutlineInputBorder(),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                      ),
+                      Icon(Icons.calendar_today),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -715,26 +872,68 @@ class _AdminPanelState extends State<AdminPanel>
             child: Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              if (nameController.text.isEmpty ||
+                  venueController.text.isEmpty ||
+                  capacityController.text.isEmpty ||
+                  generalPriceController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Please fill all required fields'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              final adminProvider = context.read<AdminProvider>();
+              bool success;
+
               if (event == null) {
-                _addEvent(
-                  nameController.text,
-                  selectedDate,
-                  venueController.text,
-                  int.parse(capacityController.text),
-                  double.parse(priceController.text),
+                success = await adminProvider.addEvent(
+                  name: nameController.text,
+                  description: descriptionController.text,
+                  date: selectedDate,
+                  venue: venueController.text,
+                  capacity: int.parse(capacityController.text),
+                  price: double.parse(generalPriceController.text),
+                  vipPrice: double.parse(
+                    vipPriceController.text.isEmpty
+                        ? generalPriceController.text
+                        : vipPriceController.text,
+                  ),
                 );
               } else {
-                _updateEvent(
-                  event.id,
-                  nameController.text,
-                  selectedDate,
-                  venueController.text,
-                  int.parse(capacityController.text),
-                  double.parse(priceController.text),
+                success = await adminProvider.updateEvent(
+                  id: event.id,
+                  name: nameController.text,
+                  description: descriptionController.text,
+                  date: selectedDate,
+                  venue: venueController.text,
+                  capacity: int.parse(capacityController.text),
+                  price: double.parse(generalPriceController.text),
+                  vipPrice: double.parse(
+                    vipPriceController.text.isEmpty
+                        ? generalPriceController.text
+                        : vipPriceController.text,
+                  ),
                 );
               }
+
               Navigator.pop(context);
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      event == null
+                          ? 'Event added successfully'
+                          : 'Event updated successfully',
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
             child: Text(event == null ? 'Add' : 'Update'),
           ),
@@ -758,15 +957,28 @@ class _AdminPanelState extends State<AdminPanel>
             children: [
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(labelText: 'Full Name'),
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: emailController,
-                decoration: InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: phoneController,
-                decoration: InputDecoration(labelText: 'Phone'),
+                decoration: InputDecoration(
+                  labelText: 'Phone',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
               ),
             ],
           ),
@@ -777,22 +989,49 @@ class _AdminPanelState extends State<AdminPanel>
             child: Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              if (nameController.text.isEmpty || emailController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Name and email are required'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              final adminProvider = context.read<AdminProvider>();
+              bool success;
+
               if (user == null) {
-                _addUser(
-                  nameController.text,
-                  emailController.text,
-                  phoneController.text,
+                success = await adminProvider.addUser(
+                  name: nameController.text,
+                  email: emailController.text,
+                  phone: phoneController.text,
                 );
               } else {
-                _updateUser(
-                  user.id,
-                  nameController.text,
-                  emailController.text,
-                  phoneController.text,
+                success = await adminProvider.updateUser(
+                  id: user.id,
+                  name: nameController.text,
+                  email: emailController.text,
+                  phone: phoneController.text,
                 );
               }
+
               Navigator.pop(context);
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      user == null
+                          ? 'User added successfully'
+                          : 'User updated successfully',
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
             child: Text(user == null ? 'Add' : 'Update'),
           ),
@@ -801,55 +1040,7 @@ class _AdminPanelState extends State<AdminPanel>
     );
   }
 
-  void _addEvent(
-    String name,
-    DateTime date,
-    String venue,
-    int capacity,
-    double price,
-  ) {
-    setState(() {
-      events.add(
-        Event(
-          id: events.length + 1,
-          name: name,
-          date: date,
-          venue: venue,
-          capacity: capacity,
-          ticketsSold: 0,
-          price: price,
-          status: 'active',
-        ),
-      );
-    });
-  }
-
-  void _updateEvent(
-    int id,
-    String name,
-    DateTime date,
-    String venue,
-    int capacity,
-    double price,
-  ) {
-    setState(() {
-      final index = events.indexWhere((event) => event.id == id);
-      if (index != -1) {
-        events[index] = Event(
-          id: id,
-          name: name,
-          date: date,
-          venue: venue,
-          capacity: capacity,
-          ticketsSold: events[index].ticketsSold,
-          price: price,
-          status: events[index].status,
-        );
-      }
-    });
-  }
-
-  void _deleteEvent(int id) {
+  void _deleteEvent(String id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -861,11 +1052,21 @@ class _AdminPanelState extends State<AdminPanel>
             child: Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                events.removeWhere((event) => event.id == id);
-              });
+            onPressed: () async {
               Navigator.pop(context);
+
+              final success = await context.read<AdminProvider>().deleteEvent(
+                id,
+              );
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Event deleted successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: Text('Delete'),
@@ -875,40 +1076,7 @@ class _AdminPanelState extends State<AdminPanel>
     );
   }
 
-  void _addUser(String name, String email, String phone) {
-    setState(() {
-      users.add(
-        User(
-          id: users.length + 1,
-          name: name,
-          email: email,
-          phone: phone,
-          totalPurchases: 0,
-          totalSpent: 0.0,
-          joinDate: DateTime.now(),
-        ),
-      );
-    });
-  }
-
-  void _updateUser(int id, String name, String email, String phone) {
-    setState(() {
-      final index = users.indexWhere((user) => user.id == id);
-      if (index != -1) {
-        users[index] = User(
-          id: id,
-          name: name,
-          email: email,
-          phone: phone,
-          totalPurchases: users[index].totalPurchases,
-          totalSpent: users[index].totalSpent,
-          joinDate: users[index].joinDate,
-        );
-      }
-    });
-  }
-
-  void _deleteUser(int id) {
+  void _deleteUser(String id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -920,11 +1088,21 @@ class _AdminPanelState extends State<AdminPanel>
             child: Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                users.removeWhere((user) => user.id == id);
-              });
+            onPressed: () async {
               Navigator.pop(context);
+
+              final success = await context.read<AdminProvider>().deleteUser(
+                id,
+              );
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('User deleted successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: Text('Delete'),
