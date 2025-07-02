@@ -1,6 +1,6 @@
 import 'package:event_ticketing_system1/models/data_manager.dart';
 import 'package:event_ticketing_system1/models/event.dart';
-import 'package:event_ticketing_system1/screens/admin_panel.dart' hide Event;
+import 'package:event_ticketing_system1/screens/admin_panel.dart';
 import 'package:event_ticketing_system1/screens/purchase_details_page.dart';
 import 'package:event_ticketing_system1/screens/ticket_details_page.dart';
 import 'package:flutter/material.dart';
