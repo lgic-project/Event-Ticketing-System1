@@ -1,70 +1,6 @@
+import 'package:event_ticketing_system1/models/admin_models.dart';
+import 'package:event_ticketing_system1/screens/home_page.dart';
 import 'package:flutter/material.dart';
-
-class Event {
-  int id;
-  String name;
-  DateTime date;
-  String venue;
-  int capacity;
-  int ticketsSold;
-  double price;
-  String status;
-
-  Event({
-    required this.id,
-    required this.name,
-    required this.date,
-    required this.venue,
-    required this.capacity,
-    required this.ticketsSold,
-    required this.price,
-    required this.status,
-  });
-}
-
-class User {
-  int id;
-  String name;
-  String email;
-  String phone;
-  int totalPurchases;
-  double totalSpent;
-  DateTime joinDate;
-
-  User({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.totalPurchases,
-    required this.totalSpent,
-    required this.joinDate,
-  });
-}
-
-class Ticket {
-  int id;
-  int eventId;
-  String eventName;
-  String customerName;
-  String customerEmail;
-  int quantity;
-  double totalPrice;
-  DateTime purchaseDate;
-  String status;
-
-  Ticket({
-    required this.id,
-    required this.eventId,
-    required this.eventName,
-    required this.customerName,
-    required this.customerEmail,
-    required this.quantity,
-    required this.totalPrice,
-    required this.purchaseDate,
-    required this.status,
-  });
-}
 
 class AdminPanel extends StatefulWidget {
   const AdminPanel({super.key});
@@ -371,85 +307,96 @@ class _AdminPanelState extends State<AdminPanel>
   }
 
   Widget _buildEventCard(Event event) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    event.name,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                _buildStatusChip(event.status),
-              ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                SizedBox(width: 4),
-                Text(event.venue, style: TextStyle(color: Colors.grey[600])),
-              ],
-            ),
-            SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                SizedBox(width: 4),
-                Text(
-                  '${event.date.day}/${event.date.month}/${event.date.year}',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Capacity: ${event.capacity}',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    Text(
-                      'Sold: ${event.ticketsSold}',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    Text(
-                      'Price: \$${event.price}',
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      },
+      child: Card(
+        margin: EdgeInsets.only(bottom: 12),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      event.name,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => _showEventDialog(event: event),
-                      icon: Icon(Icons.edit, color: Colors.blue),
-                    ),
-                    IconButton(
-                      onPressed: () => _deleteEvent(event.id),
-                      icon: Icon(Icons.delete, color: Colors.red),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                  ),
+                  _buildStatusChip(event.status),
+                ],
+              ),
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                  SizedBox(width: 4),
+                  Text(event.venue, style: TextStyle(color: Colors.grey[600])),
+                ],
+              ),
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                  SizedBox(width: 4),
+                  Text(
+                    '${event.date.day}/${event.date.month}/${event.date.year}',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Capacity: ${event.capacity}',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      Text(
+                        'Sold: ${event.ticketsSold}',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      Text(
+                        'Price: \$${event.price}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => _showEventDialog(event: event),
+                        icon: Icon(Icons.edit, color: Colors.blue),
+                      ),
+                      IconButton(
+                        onPressed: () => _deleteEvent(event.id),
+                        icon: Icon(Icons.delete, color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
