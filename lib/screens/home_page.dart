@@ -1,5 +1,6 @@
 import 'package:event_ticketing_system1/models/data_manager.dart';
 import 'package:event_ticketing_system1/models/event.dart';
+import 'package:event_ticketing_system1/screens/admin_panel.dart' hide Event;
 import 'package:event_ticketing_system1/screens/purchase_details_page.dart';
 import 'package:event_ticketing_system1/screens/ticket_details_page.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,26 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawer(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.admin_panel_settings_rounded),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPanel()),
+                );
+              },
+              child: const Text(
+                'Admin Panel',
+                style: TextStyle(fontSize: 20, color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         title: Text('Eventix', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
