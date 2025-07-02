@@ -15,7 +15,8 @@ class DataManager {
           'The biggest music festival featuring top artists from around the world.',
       date: DateTime(2025, 8, 15),
       location: 'Central Park, New York',
-      imageUrl: 'https://via.placeholder.com/300x200?text=Music+Festival',
+      imageUrl:
+          'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg',
       vipPrice: 299.99,
       generalPrice: 99.99,
       vipSeats: 500,
@@ -27,7 +28,8 @@ class DataManager {
       description: 'Learn about the latest technology trends and innovations.',
       date: DateTime(2025, 9, 10),
       location: 'Convention Center, San Francisco',
-      imageUrl: 'https://via.placeholder.com/300x200?text=Tech+Conference',
+      imageUrl:
+          'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg',
       vipPrice: 599.99,
       generalPrice: 199.99,
       vipSeats: 200,
@@ -39,7 +41,8 @@ class DataManager {
       description: 'Taste the finest cuisines and wines from around the globe.',
       date: DateTime(2025, 7, 25),
       location: 'Exhibition Hall, Chicago',
-      imageUrl: 'https://via.placeholder.com/300x200?text=Food+Wine+Expo',
+      imageUrl:
+          'https://images.pexels.com/photos/5962036/pexels-photo-5962036.jpeg',
       vipPrice: 199.99,
       generalPrice: 79.99,
       vipSeats: 300,
