@@ -28,8 +28,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Navigate to onboarding after 3 seconds
-    Timer(Duration(seconds: 3), () {
+    // Navigate to onboarding after 4 seconds
+    Timer(Duration(seconds: 4), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => OnboardingScreen()),
@@ -51,7 +51,10 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.purple.shade800, Colors.pink.shade400],
+            colors: [
+              const Color.fromARGB(255, 153, 14, 240),
+              const Color.fromARGB(255, 244, 55, 118),
+            ],
           ),
         ),
         child: Center(
