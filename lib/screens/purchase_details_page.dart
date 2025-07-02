@@ -173,10 +173,10 @@ class PurchaseDetailsPage extends StatelessWidget {
                       ],
                     ),
                     Divider(height: 24),
-                    _buildInfoRow('Payment Method', purchase.paymentMethod),
+                    _buildPaymentMethodRow(purchase.paymentMethod),
                     _buildInfoRow(
                       'Amount Paid',
-                      '\$${purchase.amount.toStringAsFixed(2)}',
+                      '\Rs${purchase.amount.toStringAsFixed(2)}',
                     ),
                     _buildInfoRow('Transaction ID', purchase.id),
                   ],
@@ -226,6 +226,56 @@ class PurchaseDetailsPage extends StatelessWidget {
           ),
           Expanded(
             child: Text(value, style: TextStyle(fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodRow(String paymentMethod) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              'Payment Method',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF60BB46),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'e',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 4),
+                Text(
+                  'eSewa',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF60BB46),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
