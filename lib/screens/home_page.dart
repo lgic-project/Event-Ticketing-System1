@@ -18,6 +18,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  String _selectedCategory = 'All';
 
   @override
   void initState() {
@@ -121,22 +122,137 @@ class _HomePageState extends State<HomePage> {
         index: _selectedIndex,
         children: [_buildEventsTab(), _buildTicketsTab()],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
+      bottomNavigationBar: _selectedIndex == 0
+          ? _buildCategoryBottomNav()
+          : BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              items: [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.event),
+                  label: 'Events',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.confirmation_number),
+                  label: 'My Tickets',
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildCategoryBottomNav() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Category Filter Bar
+        Container(
+          height: 60,
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            border: Border(top: BorderSide(color: Colors.grey[300]!)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildCategoryChip('All', Icons.event),
+                _buildCategoryChip('Music', Icons.music_note),
+                _buildCategoryChip('Seminar', Icons.school),
+                _buildCategoryChip('Sports', Icons.sports),
+                _buildCategoryChip('Other', Icons.category),
+              ],
+            ),
+          ),
+        ),
+        // Bottom Navigation Bar
+        BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          items: [
+            BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Events'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.confirmation_number),
+              label: 'My Tickets',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChip(String category, IconData icon) {
+    final isSelected = _selectedCategory == category;
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 4),
+      child: FilterChip(
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.grey[600],
+            ),
+            SizedBox(width: 4),
+            Text(
+              category,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[600],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+        selected: isSelected,
+        onSelected: (selected) {
           setState(() {
-            _selectedIndex = index;
+            _selectedCategory = category;
           });
         },
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Events'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_number),
-            label: 'My Tickets',
-          ),
-        ],
+        selectedColor: Theme.of(context).colorScheme.primary,
+        checkmarkColor: Colors.white,
+        backgroundColor: Colors.white,
+        side: BorderSide(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey[300]!,
+        ),
       ),
     );
+  }
+
+  List<Event> _getFilteredEvents(List<Event> events) {
+    if (_selectedCategory == 'All') {
+      return events;
+    }
+    if (_selectedCategory == 'Music') {
+      return events;
+    }
+    if (_selectedCategory == 'Sports') {
+      return events;
+    }
+    if (_selectedCategory == 'Seminar') {
+      return events;
+    }
+
+    return events.where((event) {
+      // Assuming the Event model has a category field
+      // If not, you might need to add logic to determine category based on title/description
+      return event.category?.toLowerCase() == _selectedCategory.toLowerCase() ||
+          (_selectedCategory == 'Other' &&
+              (event.category != null ||
+                  !['Music', 'Seminar', 'Sports'].contains(event.category)));
+    }).toList();
   }
 
   Widget _buildEventsTab() {
@@ -161,6 +277,8 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
+        final filteredEvents = _getFilteredEvents(eventProvider.upcomingEvents);
+
         return RefreshIndicator(
           onRefresh: () => eventProvider.fetchEvents(),
           child: SingleChildScrollView(
@@ -169,7 +287,9 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Upcoming Events',
+                  _selectedCategory == 'All'
+                      ? 'Upcoming Events'
+                      : '$_selectedCategory Events',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -177,10 +297,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 SizedBox(height: 16),
-                ...eventProvider.upcomingEvents.map(
-                  (event) => _buildEventCard(event),
-                ),
-                if (eventProvider.upcomingEvents.isEmpty)
+                ...filteredEvents.map((event) => _buildEventCard(event)),
+                if (filteredEvents.isEmpty)
                   Center(
                     child: Padding(
                       padding: EdgeInsets.all(32),
@@ -193,7 +311,9 @@ class _HomePageState extends State<HomePage> {
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'No upcoming events',
+                            _selectedCategory == 'All'
+                                ? 'No upcoming events'
+                                : 'No $_selectedCategory events',
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey[600],
@@ -417,7 +537,7 @@ class _HomePageState extends State<HomePage> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              '\${event.generalPrice.toStringAsFixed(2)}',
+                                              '\$${event.generalPrice.toStringAsFixed(2)}',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w500,
@@ -483,7 +603,7 @@ class _HomePageState extends State<HomePage> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              '\${event.vipPrice.toStringAsFixed(2)}',
+                                              '\$${event.vipPrice.toStringAsFixed(2)}',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w500,

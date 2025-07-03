@@ -15,6 +15,7 @@ class Event {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String eventCategory;
 
   Event({
     required this.id,
@@ -33,6 +34,7 @@ class Event {
     this.status = 'active',
     this.createdAt,
     this.updatedAt,
+    this.eventCategory = 'all',
   }) : capacity = capacity ?? (vipSeats + generalSeats);
 
   // Calculate total capacity
@@ -143,4 +145,6 @@ class Event {
           : null,
     );
   }
+
+  get category => null;
 }

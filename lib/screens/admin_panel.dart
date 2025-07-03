@@ -26,6 +26,7 @@ class _AdminPanelState extends State<AdminPanel>
 
     // Fetch admin data
     Future.microtask(() {
+      // ignore: use_build_context_synchronously
       context.read<AdminProvider>().fetchAdminData();
     });
   }
@@ -92,7 +93,7 @@ class _AdminPanelState extends State<AdminPanel>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          indicatorWeight: 3,
+          indicatorWeight: 1,
           tabs: [
             Tab(icon: Icon(Icons.event), text: 'Events'),
             Tab(icon: Icon(Icons.people), text: 'Users'),
@@ -104,7 +105,7 @@ class _AdminPanelState extends State<AdminPanel>
         children: [
           // Statistics Dashboard - Made scrollable
           Container(
-            height: 120,
+            height: 130,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.all(16),
